@@ -102,7 +102,15 @@ Do not compare against upstream's pom text. Upstream's `dependencyManagement` ap
 own reactor only, so the versions upstream *ships* are what matters, and the way to see them is
 to resolve the graph with `platform:<ver>` as parent. `tools/compare-upstream.sh <ver>` does
 exactly that and diffs the result with `openmetadata-dist/libs.lock`. Run it **after** the first
-build in 2d has refreshed `libs.lock`, then read the two lists:
+build in 2d has refreshed `libs.lock`.
+
+The root pom imports `org.open-metadata:platform:${openmetadata.version}` as a BOM, so upstream's
+managed versions already apply to our graph and the comparison should come out almost clean by
+itself. Two consequences to keep in mind: the import replays upstream's version for anything we
+do not pin, even when a newer one is reachable transitively (that is why `commons-compress` and
+`commons-lang3` carry explicit pins); and an upstream entry that carries an `exclusion` is lost
+when one of our family BOMs manages the same artifact, which is why `dropwizard-core` is copied
+explicitly with its `log4j-over-slf4j` exclusion. Then read the two lists:
 
 - `only in libs.lock` at a **lower** version than the upstream counterpart: a stale pin. Remove
   it if upstream's version is now acceptable, or raise it. This is the case to hunt for; a stale

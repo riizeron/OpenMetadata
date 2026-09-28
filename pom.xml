@@ -68,24 +68,13 @@
     <jsonschema2pojo.version>1.3.3</jsonschema2pojo.version> <!-- upstream 1.3.1 · SCA -->
     <protobuf-java.version>4.33.2</protobuf-java.version>    <!-- upstream via google libs · SCA -->
 
-    <!-- Versions that upstream already uses. Re-declared here because upstream manages them
-         only for its own reactor; a downstream consumer has to manage them itself to get the
-         same transitive resolution. Keep in sync with upstream platform pom. -->
+    <!-- Family BOMs whose whole version set has to be consistent. dropwizard is upstream's
+         value; the rest are raised above what upstream ships (requireUpperBoundDeps). -->
     <dropwizard.version>5.0.0</dropwizard.version>
     <metrics.version>4.2.37</metrics.version>                 <!-- required by dropwizard 5.0.0; service declares 4.2.19 -->
     <micrometer.version>1.16.7</micrometer.version>           <!-- upstream 1.16.7; whole family via BOM -->
     <prometheus-metrics.version>1.4.3</prometheus-metrics.version> <!-- required by micrometer-registry-prometheus 1.16.7; service declares 1.3.6 -->
     <asm.version>9.10.1</asm.version>                         <!-- required by jetty-ee10-annotations 12.1.12; json-smart brings 9.7.1 -->
-    <reactor-netty.version>1.3.7</reactor-netty.version>      <!-- upstream 1.3.7 -->
-    <reactor-core.version>3.8.7</reactor-core.version>        <!-- upstream 3.8.7 -->
-    <okhttp.version>4.12.0</okhttp.version>                   <!-- upstream 4.12.0 -->
-    <logback-access.version>2.0.7</logback-access.version>
-    <angus-mail.version>2.0.4</angus-mail.version>
-    <azure-identity.version>1.15.2</azure-identity.version>
-    <gson.version>2.13.1</gson.version>                       <!-- upstream 2.13.1 -->
-    <jakarta.xml.bind-api.version>4.0.2</jakarta.xml.bind-api.version>
-    <postgres.connector.version>42.7.12</postgres.connector.version> <!-- upstream 42.7.12 -->
-    <handlebars.version>4.5.2</handlebars.version>           <!-- upstream 4.5.2 -->
 
     <!-- Plugin versions -->
     <maven-enforcer-plugin.version>3.5.0</maven-enforcer-plugin.version>
@@ -292,15 +281,17 @@
         <artifactId>protobuf-java-util</artifactId>
         <version>${protobuf-java.version}</version>
       </dependency>
+
       <dependency>
-        <groupId>com.github.jknack</groupId>
-        <artifactId>handlebars</artifactId>
-        <version>${handlebars.version}</version>
+        <!-- upstream manages 1.26.0; without the pin the platform import below would pull it down -->
+        <groupId>org.apache.commons</groupId>
+        <artifactId>commons-compress</artifactId>
+        <version>1.27.1</version>                          <!-- upstream 1.26.0 · SCA -->
       </dependency>
       <dependency>
-        <groupId>org.postgresql</groupId>
-        <artifactId>postgresql</artifactId>
-        <version>${postgres.connector.version}</version>
+        <groupId>org.apache.commons</groupId>
+        <artifactId>commons-lang3</artifactId>
+        <version>3.20.0</version>                          <!-- upstream 3.18.0 · SCA -->
       </dependency>
 
       <!-- ===== Consistency with dropwizard 5.0.0 (reported by requireUpperBoundDeps) ===== -->
@@ -325,9 +316,16 @@
         <version>1.3.5</version>                           <!-- 1.2 via httpclient 4; search clients need 1.3.5 -->
       </dependency>
 
-      <!-- ===== Same as upstream, re-declared to reproduce upstream's transitive resolution ===== -->
+      <!-- ===== Upstream's own dependencyManagement, applied to our graph =====
+           Maven applies dependencyManagement only from the project being built, never from the
+           poms of its dependencies. Importing the upstream root pom (org.open-metadata:platform)
+           replays upstream's managed versions over the whole transitive graph, so libraries that
+           upstream pins for its reactor (reactor-core, okhttp, gson, angus-mail, ...) resolve here
+           exactly as in the upstream distribution. Precedence: the explicit entries above win over
+           this import; among imports the first declared wins, so the family BOMs above also win. -->
       <dependency>
-        <!-- upstream excludes log4j-over-slf4j from dropwizard-core for its whole reactor -->
+        <!-- explicit copy of upstream's entry: it carries an exclusion, and our dropwizard-bom import
+             above would otherwise win over the imported entry and lose it -->
         <groupId>io.dropwizard</groupId>
         <artifactId>dropwizard-core</artifactId>
         <version>${dropwizard.version}</version>
@@ -339,61 +337,11 @@
         </exclusions>
       </dependency>
       <dependency>
-        <groupId>ch.qos.logback.access</groupId>
-        <artifactId>logback-access-common</artifactId>
-        <version>${logback-access.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>ch.qos.logback.access</groupId>
-        <artifactId>logback-access-jetty12</artifactId>
-        <version>${logback-access.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>io.projectreactor.netty</groupId>
-        <artifactId>reactor-netty-http</artifactId>
-        <version>${reactor-netty.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>io.projectreactor.netty</groupId>
-        <artifactId>reactor-netty-core</artifactId>
-        <version>${reactor-netty.version}</version>
-      </dependency>
-      <dependency>
-        <!-- lettuce-core declares 3.6.x closer to the root than reactor-netty 1.3.7 declares 3.8.x -->
-        <groupId>io.projectreactor</groupId>
-        <artifactId>reactor-core</artifactId>
-        <version>${reactor-core.version}</version>
-      </dependency>
-      <dependency>
-        <!-- kubernetes client-java 25 pulls okhttp 5.1.0 (okhttp-jvm); upstream manages 4.12.0 -->
-        <groupId>com.squareup.okhttp3</groupId>
-        <artifactId>okhttp</artifactId>
-        <version>${okhttp.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>com.squareup.okhttp3</groupId>
-        <artifactId>logging-interceptor</artifactId>
-        <version>${okhttp.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.angus</groupId>
-        <artifactId>angus-mail</artifactId>
-        <version>${angus-mail.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>com.azure</groupId>
-        <artifactId>azure-identity</artifactId>
-        <version>${azure-identity.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>com.google.code.gson</groupId>
-        <artifactId>gson</artifactId>
-        <version>${gson.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>jakarta.xml.bind</groupId>
-        <artifactId>jakarta.xml.bind-api</artifactId>
-        <version>${jakarta.xml.bind-api.version}</version>
+        <groupId>org.open-metadata</groupId>
+        <artifactId>platform</artifactId>
+        <version>${openmetadata.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
       </dependency>
     </dependencies>
   </dependencyManagement>

@@ -1,6 +1,6 @@
 ---
 name: update
-description: Update this branch (build/no-source-dist) to a new OpenMetadata release. Use whenever the user asks to update, bump, upgrade or move the distribution/build/repackaging to another OpenMetadata version or tag (e.g. "обнови до 2.0.3", "/update 2.1.0", "подними версию openmetadata", "переедь на новый тег"), or asks to re-check the pins against upstream. Do not use for merging or rebasing upstream branches; this branch has no shared history with upstream by design.
+description: Update this branch (build/no-source-dist) to a new OpenMetadata release; with no version given it finds the newest release that is both tagged upstream and published on Maven Central. Use whenever the user asks to update, bump, upgrade or move the distribution/build/repackaging to another or the latest OpenMetadata version or tag (e.g. "/update", "обнови до 2.0.3", "обнови openmetadata", "есть ли новая версия", "подними версию", "переедь на новый тег"), or asks to re-check the pins against upstream. Do not use for merging or rebasing upstream branches; this branch has no shared history with upstream by design.
 ---
 
 # Update the no-source distribution to a new OpenMetadata release
@@ -17,20 +17,37 @@ git history in common with upstream: the runtime files (`bin/`, `conf/`, `bootst
 README.md section «Обновление версии OpenMetadata» is the human description of the same
 procedure; keep the two in sync if you change either.
 
-The argument is the upstream version, e.g. `2.0.3`. The tag is always `<version>-release`.
+The optional argument is the upstream version, e.g. `/update 2.0.3`. The tag is always
+`<version>-release`.
 
-## 0. Preconditions
+## 0. Pick the version and check preconditions
 
-Check before touching anything, each failure has a different fix:
+**No argument given** (the usual case): run
+`bash .claude/skills/update/scripts/latest-release.sh`. It prints the newest `X.Y.Z-release`
+tag on `origin` that is newer than `openmetadata.version` in `pom.xml` **and** has all six
+`org.open-metadata:*` artifacts on Maven Central. Upstream tags first and publishes later, so
+"newest tag" and "newest buildable release" differ for a while; the script skips the unpublished
+ones. Tell the user which version was chosen and why in one line (e.g. «Обновляю 2.0.2 → 2.0.4;
+2.0.5 уже затегирован, но на Central его ещё нет») and proceed. Two exceptions:
+- the script exits 1 (nothing newer, or only unpublished tags): report that and stop;
+- the chosen version changes the major (`2.x` → `3.x`): ask before continuing, a major usually
+  moves several library families at once and the user may prefer to wait for a patch release.
+`latest-release.sh --all` lists every candidate with its status when the user wants to choose.
 
-- On branch `build/no-source-dist` with a clean tree (`git status --porcelain` empty).
+**Argument given**: use it, but still verify it the same way, each failure has a different fix:
+
+- The tag exists: `git ls-remote --tags origin '<ver>-release'`.
+- The jars are published: `https://repo1.maven.org/maven2/org/open-metadata/<a>/<ver>/<a>-<ver>.pom`
+  returns 200 for `platform`, `openmetadata-service`, `openmetadata-mcp`, `openmetadata-ui`,
+  `elasticsearch-deps`, `opensearch-deps`. If anything is 404, stop and tell the user, the build
+  cannot work yet.
+
+In both cases:
+
+- On branch `build/no-source-dist` with no uncommitted changes (`git status --porcelain
+  --untracked-files=no` empty).
 - `origin` points at upstream (`github.com/open-metadata/OpenMetadata`), `fork` at the user's
   fork. Tags come from `origin`, pushes go to `fork`.
-- The tag exists: `git ls-remote --tags origin '<ver>-release'`.
-- The jars are published. Check `https://repo1.maven.org/maven2/org/open-metadata/<a>/<ver>/<a>-<ver>.pom`
-  returns 200 for `platform`, `openmetadata-service`, `openmetadata-mcp`, `openmetadata-ui`,
-  `elasticsearch-deps`, `opensearch-deps`. Upstream sometimes tags days before publishing; if
-  anything is 404, stop and tell the user, the build cannot work yet.
 - Note the current version from `pom.xml` (`openmetadata.version`), call it `<prev>` below.
 
 ## 1. Import commit

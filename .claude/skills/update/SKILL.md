@@ -8,11 +8,12 @@ description: Update this branch (build/no-source-dist) to a new OpenMetadata rel
 This branch builds the OpenMetadata tar.gz and Docker image from the jars upstream publishes
 to Maven Central, with vulnerable transitive libraries pinned in the root `pom.xml`. It has no
 git history in common with upstream: the runtime files (`bin/`, `conf/`, `bootstrap/`, `LICENSE`,
-`NOTICE`) are imported from the release tag as a snapshot. Updating therefore means two commits:
+`NOTICE`) are imported from the release tag as a snapshot. Updating therefore means two commits and a tag:
 
 1. **Import** the tag's runtime files (mechanical, scripted).
 2. **Adapt** the build: bump versions, reconcile the pins with what upstream ships, refresh
    `libs.lock`, and prove the classpath still works.
+3. **Tag** the adapt commit `<ver>-sber.N-no-source`.
 
 README.md section «Обновление версии OpenMetadata» is the human description of the same
 procedure; keep the two in sync if you change either.
@@ -149,11 +150,24 @@ must show `bin`, `bootstrap`, `conf`, `libs`, and `conf/` must not contain `.der
   and the JDBI status. `git diff HEAD~1 -- pom.xml openmetadata-dist/libs.lock` is the
   reviewer's view; make the message answer the questions that diff raises.
 
-## 3. Report and push
+## 3. Tag
 
-Report to the user: the two commits, the pin changes with upstream values, the jar count delta
-in `libs.lock`, the smoke results, anything skipped (Docker). Push (`git push fork
-build/no-source-dist`) only when asked; the branch tracks `fork`.
+Right after the adapt commit run `bash .claude/skills/update/scripts/tag-release.sh`. It puts an
+annotated tag `<build-version>-no-source` (e.g. `2.0.4-sber.1-no-source`) on HEAD; the name
+mirrors upstream's `<ver>-release` and carries `-sber.N` so a re-release of the same upstream
+version gets its own tag. Tag the adapt commit specifically, not a later docs or skill commit:
+the tag marks the tree the tar.gz was verified from. The script refuses to move an existing tag;
+if it does, the build version was not bumped, go back to 2a with a new `-sber.N`.
+
+## 4. Report and push
+
+Report to the user: the two commits and the tag, the pin changes with upstream values, the jar
+count delta in `libs.lock`, the smoke results, anything skipped (Docker). Push only when asked;
+the branch tracks `fork`, and the tag does not travel with the branch:
+
+```bash
+git push fork build/no-source-dist && bash .claude/skills/update/scripts/tag-release.sh --push
+```
 
 ## Things that go wrong
 

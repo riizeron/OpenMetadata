@@ -23,6 +23,7 @@ while [ -h "${PRG}" ]; do
 done
 
 BOOTSTRAP_DIR=`dirname ${PRG}`
+. ${BOOTSTRAP_DIR}/../conf/openmetadata-env.sh
 CONFIG_FILE_PATH=${BOOTSTRAP_DIR}/../conf/openmetadata.yaml
 
 # Which java to use
@@ -53,6 +54,5 @@ else
   CLASSPATH=`mvn -pl openmetadata-service -q exec:exec -Dexec.executable=echo -Dexec.args="%classpath"`
 fi
 
-${JAVA} -Dbootstrap.dir=$BOOTSTRAP_DIR  -cp ${CLASSPATH} ${OPENMETADATA_SETUP_MAIN_CLASS} -c $CONFIG_FILE_PATH "$@"
+${JAVA} -Dbootstrap.dir=$BOOTSTRAP_DIR  -cp ${CLASSPATH} $OPENMETADATA_OPTS ${OPENMETADATA_SETUP_MAIN_CLASS} -c $CONFIG_FILE_PATH "$@"
 exit $?
-

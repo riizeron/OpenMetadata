@@ -1,0 +1,13 @@
+annotations jcip-annotations
+annotations jetbrains-runtime-annotations
+annotations jsr305
+aopalliance aopalliance-repackaged
+commons-logging jcl-over-slf4j
+commons-logging spring-jcl
+expressly jakarta.el
+jakarta.activation jakarta.activation-api
+jakarta.json jakarta.json-api
+jakarta.servlet-api org.apache.felix.http.servlet-api
+jna jna-jpms
+org.apache.felix.http.servlet-api tomcat-servlet-api
+swagger-annotations swagger-annotations-jakarta

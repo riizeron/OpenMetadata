@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+~ Copyright 2021 Collate
+~ Licensed under the Apache License, Version 2.0 (the "License");
+~ you may not use this file except in compliance with the License.
+~ You may obtain a copy of the License at
+~ http://www.apache.org/licenses/LICENSE-2.0
+~ Unless required by applicable law or agreed to in writing, software
+~ distributed under the License is distributed on an "AS IS" BASIS,
+~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+~ See the License for the specific language governing permissions and
+~ limitations under the License.
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>ru.sber.datalake</groupId>
+    <artifactId>omd-platform</artifactId>
+    <version>1.12.6-sber.1</version>
+    <relativePath>../pom.xml</relativePath>
+  </parent>
+  <artifactId>openmetadata-docker</artifactId>
+  <packaging>pom</packaging>
+  <name>OpenMetadata Docker Image</name>
+  <description>OpenMetadata Docker image build</description>
+  <properties>
+    <!-- Image tag; override with -Ddocker.tag=... (e.g. to add a build number on non-release branches). -->
+    <docker.tag>${project.version}</docker.tag>
+  </properties>
+  <dependencies>
+    <!-- Reactor ordering only: the image is built from openmetadata-dist/target/*.tar.gz -->
+    <dependency>
+      <groupId>${project.groupId}</groupId>
+      <artifactId>openmetadata-dist</artifactId>
+      <version>${project.version}</version>
+      <type>pom</type>
+    </dependency>
+  </dependencies>
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>io.fabric8</groupId>
+        <artifactId>docker-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>build-openmetadata-docker-image</id>
+            <phase>package</phase>
+            <goals>
+              <goal>build</goal>
+            </goals>
+          </execution>
+          <execution>
+            <id>push-openmetadata-docker-image</id>
+            <phase>deploy</phase>
+            <goals>
+              <goal>push</goal>
+            </goals>
+          </execution>
+        </executions>
+        <configuration>
+          <verbose>true</verbose>
+          <images>
+            <image>
+              <name>${docker.repo}/openmetadata:${docker.tag}</name>
+              <build>
+                <dockerFile>${project.basedir}/src/main/docker/Dockerfile</dockerFile>
+                <args>
+                  <SBEROSC_TOKEN>${sberosc.token}</SBEROSC_TOKEN>
+                </args>
+                <assembly>
+                  <name>context</name>
+                  <descriptor>${project.basedir}/src/main/docker/assembly.xml</descriptor>
+                </assembly>
+              </build>
+            </image>
+          </images>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+</project>

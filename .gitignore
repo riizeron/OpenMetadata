@@ -1,0 +1,10 @@
+target/
+dependency-reduced-pom.xml
+.idea/
+*.iml
+.vscode/
+.DS_Store
+
+# JWT signing keys are deployment secrets, never commit them (see README.md)
+conf/*.der
+conf/*.pem

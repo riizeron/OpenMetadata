@@ -13,8 +13,6 @@
 # Home Dir
 base_dir=$(dirname $0)/..
 
-CATALOG_HOME=$base_dirbase_dir=$(dirname $0)/..
-
 CATALOG_HOME=$base_dir
 PID_DIR=$base_dir/logs
 LOG_DIR=$base_dir/logs

@@ -1,0 +1,461 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  OpenMetadata repackaging for the corporate perimeter.
+
+  This reactor does NOT build OpenMetadata sources. It takes the jars published by upstream
+  (org.open-metadata:*:${openmetadata.version}) from Maven Central / Nexus, overrides the
+  versions of vulnerable transitive libraries via <dependencyManagement>, rebuilds the two
+  shaded search-client jars, and assembles the distribution tar.gz and the Docker image.
+
+  Rules for this file:
+    * <properties> and <dependencyManagement> are the PATCH LIST. Every entry that differs from
+      upstream carries a comment with the upstream value and the reason.
+    * Managed versions apply to the whole transitive graph of openmetadata-dist, so a pin here is
+      enough to replace a library everywhere. No need to touch upstream poms.
+    * When bumping ${openmetadata.version}: re-read upstream platform-<ver>.pom, drop pins that
+      upstream has caught up with, and re-run the checks (see README.md).
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>ru.sber.datalake</groupId>
+  <artifactId>omd-platform</artifactId>
+  <version>1.12.6-sber.1</version>
+  <packaging>pom</packaging>
+
+  <name>OpenMetadata (Sber repackaging)</name>
+  <description>
+    OpenMetadata ${openmetadata.version} distribution assembled from published jars with
+    patched transitive dependencies. Upstream: https://github.com/open-metadata/OpenMetadata
+  </description>
+
+  <licenses>
+    <license>
+      <name>The Apache License, Version 2.0</name>
+      <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+    </license>
+  </licenses>
+
+  <modules>
+    <module>openmetadata-shaded-deps</module>
+    <module>openmetadata-dist</module>
+    <module>openmetadata-docker</module>
+  </modules>
+
+  <properties>
+    <maven.deploy.skip>true</maven.deploy.skip>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <maven.compiler.release>21</maven.compiler.release>
+
+    <!-- Upstream OpenMetadata release that is being repackaged. Used for every org.open-metadata:* artifact. -->
+    <openmetadata.version>1.12.6</openmetadata.version>
+
+    <!-- ===== Patched library versions (upstream 1.12.6 value in the comment) ===== -->
+    <jackson.version>2.18.9</jackson.version>                <!-- upstream 2.17.2 · SCA -->
+    <!-- Do NOT bump above 3.37.x: since JDBI 3.38.0 the SqlObject handlers no longer implement
+         org.jdbi.v3.sqlobject.Handler, and openmetadata-service 1.12.6 (compiled against 3.37.1)
+         fails with a ClassCastException when attaching MigrationDAO. Verified by tools/JdbiAttachSmoke.java. -->
+    <jdbi3.version>3.37.1</jdbi3.version>                    <!-- upstream 3.37.1 -->
+    <jetty.version>12.1.10</jetty.version>                   <!-- upstream 12.1.6 / 12.1.7 · SCA -->
+    <slf4j.version>2.0.17</slf4j.version>                    <!-- upstream 2.0.4 -->
+    <logback.version>1.5.34</logback.version>                <!-- upstream 1.5.18 / 1.5.19 · SCA -->
+    <netty.version>4.1.137.Final</netty.version>             <!-- upstream 4.1.132.Final · SCA -->
+    <spring.version>6.2.19</spring.version>                  <!-- upstream 6.2.11 · SCA -->
+    <httpcore5.version>5.4.3</httpcore5.version>             <!-- upstream 5.3.4 (bundled in shaded jars) · SCA -->
+    <httpclient5.version>5.6.3</httpclient5.version>         <!-- upstream 5.4.4 / 5.5 (bundled in shaded jars) · SCA -->
+    <jsonschema2pojo.version>1.3.3</jsonschema2pojo.version> <!-- upstream 1.2.2 · SCA -->
+    <protobuf-java.version>4.33.2</protobuf-java.version>    <!-- upstream via google libs · SCA -->
+    <postgres.connector.version>42.7.12</postgres.connector.version> <!-- upstream 42.7.7 · SCA -->
+    <handlebars.version>4.5.2</handlebars.version>           <!-- upstream 4.5.0 · SCA -->
+
+    <!-- Versions that upstream already uses. Re-declared here because upstream manages them
+         only for its own reactor; a downstream consumer has to manage them itself to get the
+         same transitive resolution. Keep in sync with upstream platform pom. -->
+    <dropwizard.version>5.0.0</dropwizard.version>
+    <metrics.version>4.2.37</metrics.version>                 <!-- required by dropwizard 5.0.0; service declares 4.2.19 -->
+    <micrometer.version>1.16.7</micrometer.version>           <!-- upstream 1.14.5 · SCA; whole family via BOM -->
+    <prometheus-metrics.version>1.4.3</prometheus-metrics.version> <!-- required by micrometer-registry-prometheus 1.16.7; service declares 1.3.6 -->
+    <asm.version>9.10</asm.version>                           <!-- required by jetty-annotations 12.1.10; json-smart brings 9.7.1 -->
+    <reactor-netty.version>1.2.14</reactor-netty.version>
+    <logback-access.version>2.0.7</logback-access.version>
+    <angus-mail.version>2.0.4</angus-mail.version>
+    <azure-identity.version>1.15.2</azure-identity.version>
+    <gson.version>2.11.0</gson.version>
+    <jakarta.xml.bind-api.version>4.0.2</jakarta.xml.bind-api.version>
+
+    <!-- Plugin versions -->
+    <maven-enforcer-plugin.version>3.5.0</maven-enforcer-plugin.version>
+    <maven-compiler-plugin.version>3.13.0</maven-compiler-plugin.version>
+    <maven-jar-plugin.version>3.3.0</maven-jar-plugin.version>
+    <maven-shade-plugin.version>3.6.0</maven-shade-plugin.version>
+    <maven-assembly-plugin.version>3.4.2</maven-assembly-plugin.version>
+    <maven-dependency-plugin.version>3.6.0</maven-dependency-plugin.version>
+    <maven-deploy-plugin.version>3.0.0</maven-deploy-plugin.version>
+    <exec-maven-plugin.version>3.1.0</exec-maven-plugin.version>
+    <docker-maven-plugin.version>0.48.1</docker-maven-plugin.version>
+  </properties>
+
+  <dependencyManagement>
+    <dependencies>
+      <!-- ===== BOM imports: one version for every artifact of the family ===== -->
+      <dependency>
+        <groupId>org.jdbi</groupId>
+        <artifactId>jdbi3-bom</artifactId>
+        <version>${jdbi3.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.slf4j</groupId>
+        <artifactId>slf4j-bom</artifactId>
+        <version>${slf4j.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <dependency>
+        <groupId>com.fasterxml.jackson</groupId>
+        <artifactId>jackson-bom</artifactId>
+        <version>${jackson.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-bom</artifactId>
+        <version>${jetty.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.ee10</groupId>
+        <artifactId>jetty-ee10-bom</artifactId>
+        <version>${jetty.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <dependency>
+        <groupId>io.netty</groupId>
+        <artifactId>netty-bom</artifactId>
+        <version>${netty.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <dependency>
+        <groupId>io.dropwizard</groupId>
+        <artifactId>dropwizard-bom</artifactId>
+        <version>${dropwizard.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <dependency>
+        <groupId>io.dropwizard.metrics</groupId>
+        <artifactId>metrics-bom</artifactId>
+        <version>${metrics.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <dependency>
+        <groupId>io.micrometer</groupId>
+        <artifactId>micrometer-bom</artifactId>
+        <version>${micrometer.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <dependency>
+        <groupId>io.prometheus</groupId>
+        <artifactId>prometheus-metrics-bom</artifactId>
+        <version>${prometheus-metrics.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+
+      <!-- ===== Security pins (SCA) ===== -->
+      <dependency>
+        <groupId>ch.qos.logback</groupId>
+        <artifactId>logback-classic</artifactId>
+        <version>${logback.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>ch.qos.logback</groupId>
+        <artifactId>logback-core</artifactId>
+        <version>${logback.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.springframework</groupId>
+        <artifactId>spring-core</artifactId>
+        <version>${spring.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.springframework</groupId>
+        <artifactId>spring-beans</artifactId>
+        <version>${spring.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.springframework</groupId>
+        <artifactId>spring-expression</artifactId>
+        <version>${spring.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.httpcomponents.core5</groupId>
+        <artifactId>httpcore5</artifactId>
+        <version>${httpcore5.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.httpcomponents.core5</groupId>
+        <artifactId>httpcore5-h2</artifactId>
+        <version>${httpcore5.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.httpcomponents.client5</groupId>
+        <artifactId>httpclient5</artifactId>
+        <version>${httpclient5.version}</version>
+      </dependency>
+      <dependency>
+        <!-- 1.3.x pulls Jackson 3 (tools.jackson); OpenMetadata is on Jackson 2, so it is excluded. -->
+        <groupId>org.jsonschema2pojo</groupId>
+        <artifactId>jsonschema2pojo-core</artifactId>
+        <version>${jsonschema2pojo.version}</version>
+        <exclusions>
+          <exclusion>
+            <groupId>tools.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>tools.jackson.core</groupId>
+            <artifactId>jackson-core</artifactId>
+          </exclusion>
+        </exclusions>
+      </dependency>
+      <dependency>
+        <groupId>org.jsoup</groupId>
+        <artifactId>jsoup</artifactId>
+        <version>1.23.1</version>                          <!-- upstream 1.18.x via flexmark · SCA -->
+      </dependency>
+      <dependency>
+        <groupId>org.apache.calcite</groupId>
+        <artifactId>calcite-core</artifactId>
+        <version>1.42.0</version>                          <!-- upstream 1.36.0 · SCA -->
+      </dependency>
+      <dependency>
+        <groupId>org.ow2.asm</groupId>
+        <artifactId>asm</artifactId>
+        <version>${asm.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.ow2.asm</groupId>
+        <artifactId>asm-commons</artifactId>
+        <version>${asm.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.ow2.asm</groupId>
+        <artifactId>asm-tree</artifactId>
+        <version>${asm.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.ow2.asm</groupId>
+        <artifactId>asm-util</artifactId>
+        <version>${asm.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.ow2.asm</groupId>
+        <artifactId>asm-analysis</artifactId>
+        <version>${asm.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.mchange</groupId>
+        <artifactId>mchange-commons-java</artifactId>
+        <version>0.6.0</version>                           <!-- upstream 0.3.x via c3p0 · SCA -->
+      </dependency>
+      <dependency>
+        <groupId>org.apache.thrift</groupId>
+        <artifactId>libthrift</artifactId>
+        <version>0.23.0</version>                          <!-- upstream via calcite · SCA -->
+      </dependency>
+      <dependency>
+        <groupId>org.bouncycastle</groupId>
+        <artifactId>bcpkix-jdk18on</artifactId>
+        <version>1.84</version>                            <!-- upstream via pac4j/azure · SCA -->
+      </dependency>
+      <dependency>
+        <groupId>org.openjdk.nashorn</groupId>
+        <artifactId>nashorn-core</artifactId>
+        <version>15.7</version>                            <!-- upstream 15.4 via json-logic · SCA -->
+      </dependency>
+      <dependency>
+        <groupId>com.google.protobuf</groupId>
+        <artifactId>protobuf-java</artifactId>
+        <version>${protobuf-java.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.google.cloud</groupId>
+        <artifactId>google-cloud-secretmanager</artifactId>
+        <version>2.28.0</version>                          <!-- upstream via libraries-bom · SCA -->
+      </dependency>
+      <dependency>
+        <groupId>com.github.jknack</groupId>
+        <artifactId>handlebars</artifactId>
+        <version>${handlebars.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.postgresql</groupId>
+        <artifactId>postgresql</artifactId>
+        <version>${postgres.connector.version}</version>
+      </dependency>
+
+      <!-- ===== Consistency with dropwizard 5.0.0 (reported by requireUpperBoundDeps) ===== -->
+      <dependency>
+        <groupId>org.hibernate.validator</groupId>
+        <artifactId>hibernate-validator</artifactId>
+        <version>8.0.3.Final</version>                     <!-- service declares 8.0.1.Final, dropwizard-jersey needs 8.0.3 -->
+      </dependency>
+      <dependency>
+        <groupId>com.fasterxml</groupId>
+        <artifactId>classmate</artifactId>
+        <version>1.7.0</version>                           <!-- 1.5.1 via hibernate-validator 8.0.1 -->
+      </dependency>
+      <dependency>
+        <groupId>org.jboss.logging</groupId>
+        <artifactId>jboss-logging</artifactId>
+        <version>3.6.1.Final</version>                     <!-- 3.4.3.Final via hibernate-validator 8.0.1 -->
+      </dependency>
+      <dependency>
+        <groupId>commons-logging</groupId>
+        <artifactId>commons-logging</artifactId>
+        <version>1.3.5</version>                           <!-- 1.2 via httpclient 4; search clients need 1.3.5 -->
+      </dependency>
+
+      <!-- ===== Same as upstream, re-declared to reproduce upstream's transitive resolution ===== -->
+      <dependency>
+        <!-- upstream excludes log4j-over-slf4j from dropwizard-core for its whole reactor -->
+        <groupId>io.dropwizard</groupId>
+        <artifactId>dropwizard-core</artifactId>
+        <version>${dropwizard.version}</version>
+        <exclusions>
+          <exclusion>
+            <groupId>org.slf4j</groupId>
+            <artifactId>log4j-over-slf4j</artifactId>
+          </exclusion>
+        </exclusions>
+      </dependency>
+      <dependency>
+        <groupId>ch.qos.logback.access</groupId>
+        <artifactId>logback-access-common</artifactId>
+        <version>${logback-access.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>ch.qos.logback.access</groupId>
+        <artifactId>logback-access-jetty12</artifactId>
+        <version>${logback-access.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.projectreactor.netty</groupId>
+        <artifactId>reactor-netty-http</artifactId>
+        <version>${reactor-netty.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.projectreactor.netty</groupId>
+        <artifactId>reactor-netty-core</artifactId>
+        <version>${reactor-netty.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.angus</groupId>
+        <artifactId>angus-mail</artifactId>
+        <version>${angus-mail.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.azure</groupId>
+        <artifactId>azure-identity</artifactId>
+        <version>${azure-identity.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.google.code.gson</groupId>
+        <artifactId>gson</artifactId>
+        <version>${gson.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>jakarta.xml.bind</groupId>
+        <artifactId>jakarta.xml.bind-api</artifactId>
+        <version>${jakarta.xml.bind-api.version}</version>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
+  <build>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-enforcer-plugin</artifactId>
+          <version>${maven-enforcer-plugin.version}</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-compiler-plugin</artifactId>
+          <version>${maven-compiler-plugin.version}</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-jar-plugin</artifactId>
+          <version>${maven-jar-plugin.version}</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-shade-plugin</artifactId>
+          <version>${maven-shade-plugin.version}</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-assembly-plugin</artifactId>
+          <version>${maven-assembly-plugin.version}</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-dependency-plugin</artifactId>
+          <version>${maven-dependency-plugin.version}</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-deploy-plugin</artifactId>
+          <version>${maven-deploy-plugin.version}</version>
+        </plugin>
+        <plugin>
+          <groupId>org.codehaus.mojo</groupId>
+          <artifactId>exec-maven-plugin</artifactId>
+          <version>${exec-maven-plugin.version}</version>
+        </plugin>
+        <plugin>
+          <groupId>io.fabric8</groupId>
+          <artifactId>docker-maven-plugin</artifactId>
+          <version>${docker-maven-plugin.version}</version>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-enforcer-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>enforce-environment</id>
+            <goals>
+              <goal>enforce</goal>
+            </goals>
+            <configuration>
+              <rules>
+                <requireMavenVersion>
+                  <version>[3.6.0,)</version>
+                </requireMavenVersion>
+                <requireJavaVersion>
+                  <version>[21,)</version>
+                </requireJavaVersion>
+              </rules>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+</project>

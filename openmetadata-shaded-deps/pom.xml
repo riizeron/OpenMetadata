@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Rebuilt shaded search clients for OpenMetadata ${openmetadata.version}.
+
+  Upstream publishes org.open-metadata:elasticsearch-deps and org.open-metadata:opensearch-deps
+  as uber-jars that bundle unrelocated copies of Jackson, Apache HttpComponents 5, SLF4J and
+  Jakarta JSON. Those copies cannot be patched via dependencyManagement and shadow the standalone
+  jars on the classpath. The modules below rebuild the same jars (same coordinates, same es.* / os.*
+  relocations) but leave those libraries out, so the distribution ships exactly one copy of each.
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>ru.sber.datalake</groupId>
+    <artifactId>omd-platform</artifactId>
+    <version>1.12.6-sber.1</version>
+    <relativePath>../pom.xml</relativePath>
+  </parent>
+
+  <artifactId>openmetadata-shaded-deps</artifactId>
+  <packaging>pom</packaging>
+  <name>Shaded Deps for OpenMetadata Server</name>
+
+  <modules>
+    <module>elasticsearch-dep</module>
+    <module>opensearch-dep</module>
+  </modules>
+
+  <dependencies>
+    <!-- Provided by the distribution at runtime; excluded from the shaded jars below. -->
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.httpcomponents.client5</groupId>
+      <artifactId>httpclient5</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.httpcomponents.core5</groupId>
+      <artifactId>httpcore5</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.httpcomponents.core5</groupId>
+      <artifactId>httpcore5-h2</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>jakarta.json</groupId>
+      <artifactId>jakarta.json-api</artifactId>
+      <version>2.1.3</version>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <!-- Always rebuild the plain jar. Otherwise an up-to-date check keeps the PREVIOUS shaded
+               jar as the input of the next shade run and stale classes accumulate between builds. -->
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-jar-plugin</artifactId>
+          <configuration>
+            <forceCreation>true</forceCreation>
+          </configuration>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-shade-plugin</artifactId>
+          <executions>
+            <execution>
+              <phase>package</phase>
+              <goals>
+                <goal>shade</goal>
+              </goals>
+            </execution>
+          </executions>
+          <configuration>
+            <keepDependenciesWithProvidedScope>false</keepDependenciesWithProvidedScope>
+            <promoteTransitiveDependencies>true</promoteTransitiveDependencies>
+            <minimizeJar>false</minimizeJar>
+            <dependencyReducedPomLocation>${project.build.directory}/dependency-reduced-pom.xml</dependencyReducedPomLocation>
+            <artifactSet>
+              <includes>
+                <include>*:*</include>
+              </includes>
+              <excludes>
+                <exclude>com.fasterxml.jackson.core:*</exclude>
+                <exclude>org.apache.httpcomponents.core5:*</exclude>
+                <exclude>org.apache.httpcomponents.client5:*</exclude>
+                <exclude>org.slf4j:*</exclude>
+                <exclude>jakarta.json:jakarta.json-api</exclude>
+                <exclude>jakarta.json.bind:jakarta.json.bind-api</exclude>
+                <exclude>commons-logging:commons-logging</exclude>
+                <exclude>com.google.code.findbugs:jsr305</exclude>
+                <exclude>org.glassfish:jakarta.json</exclude>
+                <exclude>jakarta.annotation:jakarta.annotation-api</exclude>
+              </excludes>
+            </artifactSet>
+            <filters>
+              <filter>
+                <artifact>*:*</artifact>
+                <excludes>
+                  <exclude>META-INF/*.SF</exclude>
+                  <exclude>META-INF/*.sf</exclude>
+                  <exclude>META-INF/*.DSA</exclude>
+                  <exclude>META-INF/*.dsa</exclude>
+                  <exclude>META-INF/*.RSA</exclude>
+                  <exclude>META-INF/*.rsa</exclude>
+                  <exclude>META-INF/*.EC</exclude>
+                  <exclude>META-INF/*.ec</exclude>
+                  <exclude>META-INF/MSFTSIG.SF</exclude>
+                  <exclude>META-INF/MSFTSIG.RSA</exclude>
+                  <exclude>META-INF/LICENSE.txt</exclude>
+                  <exclude>META-INF/NOTICE.txt</exclude>
+                </excludes>
+              </filter>
+            </filters>
+          </configuration>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-enforcer-plugin</artifactId>
+        <executions>
+          <execution>
+            <!-- The shaded jars replace upstream artifacts, so their version must equal the
+                 OpenMetadata version being repackaged (hard-coded in the child poms). -->
+            <id>enforce-shaded-version</id>
+            <goals>
+              <goal>enforce</goal>
+            </goals>
+            <configuration>
+              <rules>
+                <evaluateBeanshell>
+                  <condition>"pom".equals("${project.packaging}") || "${project.version}".equals("${openmetadata.version}")</condition>
+                  <message>Shaded module version must be ${openmetadata.version} (openmetadata.version), found ${project.version}</message>
+                </evaluateBeanshell>
+              </rules>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+</project>

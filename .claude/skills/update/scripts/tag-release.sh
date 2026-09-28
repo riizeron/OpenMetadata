@@ -2,12 +2,14 @@
 #
 # Tags the current commit as a no-source release of the build version in pom.xml.
 #
-#   tag-release.sh            -> annotated tag <build-version>-no-source, e.g. 2.0.2-sber.1-no-source
+#   tag-release.sh            -> annotated tag <openmetadata.version>-no-src, e.g. 2.0.2-no-src
 #   tag-release.sh --push     -> the same, then push the tag to the fork remote
 #
-# The tag name carries the full build version (upstream version plus -sber.N) so that a re-release
-# of the same upstream version gets its own tag. Refuses to run on a dirty tree or when the tag
-# already exists on another commit: a tag that moves is worse than no tag.
+# The tag mirrors upstream's <ver>-release and names the upstream version only. A re-release of
+# the same upstream version (-sber.2) therefore has no tag of its own: delete the old tag
+# explicitly (git tag -d, git push fork :refs/tags/<tag>) if the new build should carry it.
+# Refuses to run on a dirty tree or when the tag already exists on another commit: a tag that
+# moves silently is worse than no tag.
 
 set -euo pipefail
 
@@ -23,11 +25,11 @@ OM_VERSION=$(sed -n 's#.*<openmetadata.version>\(.*\)</openmetadata.version>.*#\
 [ -n "$BUILD_VERSION" ] && [ -n "$OM_VERSION" ] || fail "cannot read versions from pom.xml"
 case "$BUILD_VERSION" in "$OM_VERSION"-*) ;; *) fail "build version ${BUILD_VERSION} does not start with openmetadata.version ${OM_VERSION}" ;; esac
 
-TAG="${BUILD_VERSION}-no-source"
+TAG="${OM_VERSION}-no-src"
 HEAD_SHA=$(git rev-parse HEAD)
 
 if EXISTING=$(git rev-parse -q --verify "refs/tags/${TAG}^{commit}" 2>/dev/null); then
-  [ "$EXISTING" = "$HEAD_SHA" ] || fail "tag ${TAG} already points at ${EXISTING:0:9}, not at HEAD; bump -sber.N instead of retagging"
+  [ "$EXISTING" = "$HEAD_SHA" ] || fail "tag ${TAG} already points at ${EXISTING:0:9}, not at HEAD; delete it first if this build should replace that release"
   echo "tag-release: ${TAG} already on HEAD"
 else
   git tag -a "$TAG" -m "OpenMetadata ${OM_VERSION} distribution built from published jars (${BUILD_VERSION})"

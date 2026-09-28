@@ -13,7 +13,7 @@ git history in common with upstream: the runtime files (`bin/`, `conf/`, `bootst
 1. **Import** the tag's runtime files (mechanical, scripted).
 2. **Adapt** the build: bump versions, reconcile the pins with what upstream ships, refresh
    `libs.lock`, and prove the classpath still works.
-3. **Tag** the adapt commit `<ver>-sber.N-no-source`.
+3. **Tag** the adapt commit `<ver>-no-src`.
 
 README.md section «Обновление версии OpenMetadata» is the human description of the same
 procedure; keep the two in sync if you change either.
@@ -153,11 +153,12 @@ must show `bin`, `bootstrap`, `conf`, `libs`, and `conf/` must not contain `.der
 ## 3. Tag
 
 Right after the adapt commit run `bash .claude/skills/update/scripts/tag-release.sh`. It puts an
-annotated tag `<build-version>-no-source` (e.g. `2.0.4-sber.1-no-source`) on HEAD; the name
-mirrors upstream's `<ver>-release` and carries `-sber.N` so a re-release of the same upstream
-version gets its own tag. Tag the adapt commit specifically, not a later docs or skill commit:
-the tag marks the tree the tar.gz was verified from. The script refuses to move an existing tag;
-if it does, the build version was not bumped, go back to 2a with a new `-sber.N`.
+annotated tag `<ver>-no-src` (e.g. `2.0.4-no-src`) on HEAD, mirroring upstream's `<ver>-release`.
+Tag the adapt commit specifically, not a later docs or skill commit: the tag marks the tree the
+tar.gz was verified from. The script refuses to move an existing tag. That happens on a re-release
+of the same upstream version (`-sber.2`): the tag names the upstream version only, so decide with
+the user whether the new build should take it over (`git tag -d <tag> && git push fork
+:refs/tags/<tag>`, then rerun) or stay untagged.
 
 ## 4. Report and push
 

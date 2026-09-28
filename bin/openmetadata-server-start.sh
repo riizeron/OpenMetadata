@@ -105,7 +105,10 @@ fi
 if [ -z "$OPENMETADATA_JVM_PERFORMANCE_OPTS" ]; then
   export OPENMETADATA_JVM_PERFORMANCE_OPTS="\
     -server -XX:+UseG1GC \
+    -XX:+UnlockExperimentalVMOptions \
     -XX:MaxGCPauseMillis=200 \
+    -XX:G1NewSizePercent=5 \
+    -XX:G1MaxNewSizePercent=20 \
     -XX:InitiatingHeapOccupancyPercent=45 \
     -XX:+ExplicitGCInvokesConcurrent \
     -XX:+UseStringDeduplication \
@@ -119,6 +122,10 @@ APP_CLASS="org.openmetadata.service.OpenMetadataApplication"
 
 # Launch mode
 if [ "x$DAEMON_MODE" = "xtrue" ]; then
+    # $CONSOLE_OUTPUT_FILE has no rotation, and the console appender in conf/openmetadata.yaml
+    # emits what logback already writes to the rotated logs/openmetadata.log. Silence the console
+    # so this file only collects JVM and pre-logback output. CONSOLE_LOG_LEVEL=TRACE restores it.
+    export CONSOLE_LOG_LEVEL="${CONSOLE_LOG_LEVEL:-OFF}"
     nohup $JAVA $OPENMETADATA_HEAP_OPTS $OPENMETADATA_JVM_PERFORMANCE_OPTS $OPENMETADATA_GC_LOG_OPTS -cp $CLASSPATH $OPENMETADATA_OPTS "$APP_CLASS" "server" "$@" > "$CONSOLE_OUTPUT_FILE" 2>&1 < /dev/null &
 else
     exec $JAVA $OPENMETADATA_HEAP_OPTS $OPENMETADATA_JVM_PERFORMANCE_OPTS $OPENMETADATA_GC_LOG_OPTS -cp $CLASSPATH $OPENMETADATA_OPTS "$APP_CLASS" "server" "$@"

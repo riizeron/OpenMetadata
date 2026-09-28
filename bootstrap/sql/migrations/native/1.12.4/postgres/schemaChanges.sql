@@ -116,17 +116,3 @@ ON search_index_retry_queue(status);
 
 CREATE INDEX IF NOT EXISTS idx_search_index_retry_queue_claimed
 ON search_index_retry_queue(claimedAt);
-
--- Enable allowImpersonation for McpApplicationBot so it can record impersonation in audit logs
-UPDATE user_entity
-SET json = jsonb_set(json::jsonb, '{allowImpersonation}', 'true')::json
-WHERE name = 'mcpapplicationbot';
-
--- Assign ApplicationBotImpersonationRole to the MCP bot user
--- Relationship.HAS ordinal = 10
-INSERT INTO entity_relationship (fromId, toId, fromEntity, toEntity, relation)
-SELECT ue.id, re.id, 'user', 'role', 10
-FROM user_entity ue, role_entity re
-WHERE ue.name = 'mcpapplicationbot'
-  AND re.name = 'ApplicationBotImpersonationRole'
-ON CONFLICT DO NOTHING;

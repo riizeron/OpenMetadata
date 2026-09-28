@@ -323,6 +323,7 @@ CREATE TABLE public.entity_relationship (
     fromentity character varying(256) NOT NULL,
     toentity character varying(256) NOT NULL,
     relation smallint NOT NULL,
+    relationtype character varying(64) DEFAULT ''::character varying NOT NULL,
     jsonschema character varying(256),
     json jsonb,
     deleted boolean DEFAULT false NOT NULL
@@ -838,7 +839,7 @@ ALTER TABLE public.tag OWNER TO openmetadata_user;
 
 CREATE TABLE public.tag_usage (
     source smallint NOT NULL,
-    tagfqn character varying(256) NOT NULL,
+    tagfqn character varying(512) NOT NULL,
     labeltype smallint NOT NULL,
     state smallint NOT NULL,
     tagfqnhash character varying(382),
@@ -1326,18 +1327,9 @@ ALTER TABLE ONLY public.entity_extension
 --
 
 ALTER TABLE ONLY public.entity_relationship
-    ADD CONSTRAINT entity_relationship_pkey PRIMARY KEY (fromid, toid, relation);
+    ADD CONSTRAINT entity_relationship_pkey PRIMARY KEY (fromid, toid, relation, relationtype);
 
 
---
--- Name: entity_usage entity_usage_usagedate_id_key; Type: CONSTRAINT; Schema: public; Owner: openmetadata_user
---
-
-ALTER TABLE ONLY public.entity_usage
-    ADD CONSTRAINT entity_usage_usagedate_id_key UNIQUE (usagedate, id);
-
-
---
 -- Name: event_subscription_entity event_subscription_entity_namehash_key; Type: CONSTRAINT; Schema: public; Owner: openmetadata_user
 --
 
@@ -1910,6 +1902,13 @@ CREATE INDEX change_event_event_type_index ON public.change_event USING btree (e
 
 
 --
+-- Name: entity_usage_id_usage_date_idx; Type: INDEX; Schema: public; Owner: openmetadata_user
+--
+
+CREATE UNIQUE INDEX entity_usage_id_usage_date_idx ON public.entity_usage USING btree (id, usagedate);
+
+
+--
 -- Name: entity_relationship_from_index; Type: INDEX; Schema: public; Owner: openmetadata_user
 --
 
@@ -1989,4 +1988,3 @@ GRANT ALL ON SCHEMA public TO openmetadata_user;
 --
 -- PostgreSQL database dump complete
 --
-

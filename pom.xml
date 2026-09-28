@@ -22,7 +22,7 @@
 
   <groupId>ru.sber.datalake</groupId>
   <artifactId>omd-platform</artifactId>
-  <version>1.12.6-sber.1</version>
+  <version>2.0.2-sber.1</version>
   <packaging>pom</packaging>
 
   <name>OpenMetadata (Sber repackaging)</name>
@@ -50,43 +50,46 @@
     <maven.compiler.release>21</maven.compiler.release>
 
     <!-- Upstream OpenMetadata release that is being repackaged. Used for every org.open-metadata:* artifact. -->
-    <openmetadata.version>1.12.6</openmetadata.version>
+    <openmetadata.version>2.0.2</openmetadata.version>
 
-    <!-- ===== Patched library versions (upstream 1.12.6 value in the comment) ===== -->
-    <jackson.version>2.18.9</jackson.version>                <!-- upstream 2.17.2 · SCA -->
+    <!-- ===== Patched library versions (upstream 2.0.2 value in the comment) ===== -->
+    <jackson.version>2.18.10</jackson.version>               <!-- upstream 2.18.10 -->
     <!-- Do NOT bump above 3.37.x: since JDBI 3.38.0 the SqlObject handlers no longer implement
-         org.jdbi.v3.sqlobject.Handler, and openmetadata-service 1.12.6 (compiled against 3.37.1)
+         org.jdbi.v3.sqlobject.Handler, and openmetadata-service 2.0.2 (compiled against 3.37.1)
          fails with a ClassCastException when attaching MigrationDAO. Verified by tools/JdbiAttachSmoke.java. -->
     <jdbi3.version>3.37.1</jdbi3.version>                    <!-- upstream 3.37.1 -->
-    <jetty.version>12.1.10</jetty.version>                   <!-- upstream 12.1.6 / 12.1.7 · SCA -->
+    <jetty.version>12.1.12</jetty.version>                   <!-- upstream 12.1.12 (service pom still says 12.1.10) -->
     <slf4j.version>2.0.17</slf4j.version>                    <!-- upstream 2.0.4 -->
-    <logback.version>1.5.34</logback.version>                <!-- upstream 1.5.18 / 1.5.19 · SCA -->
-    <netty.version>4.1.137.Final</netty.version>             <!-- upstream 4.1.132.Final · SCA -->
-    <spring.version>6.2.19</spring.version>                  <!-- upstream 6.2.11 · SCA -->
-    <httpcore5.version>5.4.3</httpcore5.version>             <!-- upstream 5.3.4 (bundled in shaded jars) · SCA -->
-    <httpclient5.version>5.6.3</httpclient5.version>         <!-- upstream 5.4.4 / 5.5 (bundled in shaded jars) · SCA -->
-    <jsonschema2pojo.version>1.3.3</jsonschema2pojo.version> <!-- upstream 1.2.2 · SCA -->
+    <logback.version>1.5.36</logback.version>                <!-- upstream 1.5.36 -->
+    <netty.version>4.2.18.Final</netty.version>              <!-- upstream 4.2.18.Final (netty-bom in platform pom) -->
+    <spring.version>7.0.9</spring.version>                   <!-- upstream 7.0.9 -->
+    <httpcore5.version>5.4.3</httpcore5.version>             <!-- upstream 5.4.3 (bundled in shaded jars) -->
+    <httpclient5.version>5.6.4</httpclient5.version>         <!-- upstream 5.6.4 (bundled in shaded jars) -->
+    <jsonschema2pojo.version>1.3.3</jsonschema2pojo.version> <!-- upstream 1.3.1 · SCA -->
     <protobuf-java.version>4.33.2</protobuf-java.version>    <!-- upstream via google libs · SCA -->
-    <postgres.connector.version>42.7.12</postgres.connector.version> <!-- upstream 42.7.7 · SCA -->
-    <handlebars.version>4.5.2</handlebars.version>           <!-- upstream 4.5.0 · SCA -->
 
     <!-- Versions that upstream already uses. Re-declared here because upstream manages them
          only for its own reactor; a downstream consumer has to manage them itself to get the
          same transitive resolution. Keep in sync with upstream platform pom. -->
     <dropwizard.version>5.0.0</dropwizard.version>
     <metrics.version>4.2.37</metrics.version>                 <!-- required by dropwizard 5.0.0; service declares 4.2.19 -->
-    <micrometer.version>1.16.7</micrometer.version>           <!-- upstream 1.14.5 · SCA; whole family via BOM -->
+    <micrometer.version>1.16.7</micrometer.version>           <!-- upstream 1.16.7; whole family via BOM -->
     <prometheus-metrics.version>1.4.3</prometheus-metrics.version> <!-- required by micrometer-registry-prometheus 1.16.7; service declares 1.3.6 -->
-    <asm.version>9.10</asm.version>                           <!-- required by jetty-annotations 12.1.10; json-smart brings 9.7.1 -->
-    <reactor-netty.version>1.2.14</reactor-netty.version>
+    <asm.version>9.10.1</asm.version>                         <!-- required by jetty-ee10-annotations 12.1.12; json-smart brings 9.7.1 -->
+    <reactor-netty.version>1.3.7</reactor-netty.version>      <!-- upstream 1.3.7 -->
+    <reactor-core.version>3.8.7</reactor-core.version>        <!-- upstream 3.8.7 -->
+    <okhttp.version>4.12.0</okhttp.version>                   <!-- upstream 4.12.0 -->
     <logback-access.version>2.0.7</logback-access.version>
     <angus-mail.version>2.0.4</angus-mail.version>
     <azure-identity.version>1.15.2</azure-identity.version>
-    <gson.version>2.11.0</gson.version>
+    <gson.version>2.13.1</gson.version>                       <!-- upstream 2.13.1 -->
     <jakarta.xml.bind-api.version>4.0.2</jakarta.xml.bind-api.version>
+    <postgres.connector.version>42.7.12</postgres.connector.version> <!-- upstream 42.7.12 -->
+    <handlebars.version>4.5.2</handlebars.version>           <!-- upstream 4.5.2 -->
 
     <!-- Plugin versions -->
     <maven-enforcer-plugin.version>3.5.0</maven-enforcer-plugin.version>
+    <maven-clean-plugin.version>3.4.1</maven-clean-plugin.version>
     <maven-compiler-plugin.version>3.13.0</maven-compiler-plugin.version>
     <maven-jar-plugin.version>3.3.0</maven-jar-plugin.version>
     <maven-shade-plugin.version>3.6.0</maven-shade-plugin.version>
@@ -231,12 +234,12 @@
       <dependency>
         <groupId>org.jsoup</groupId>
         <artifactId>jsoup</artifactId>
-        <version>1.23.1</version>                          <!-- upstream 1.18.x via flexmark · SCA -->
+        <version>1.23.2</version>                          <!-- upstream 1.23.2 -->
       </dependency>
       <dependency>
         <groupId>org.apache.calcite</groupId>
         <artifactId>calcite-core</artifactId>
-        <version>1.42.0</version>                          <!-- upstream 1.36.0 · SCA -->
+        <version>1.42.0</version>                          <!-- upstream 1.42.0 -->
       </dependency>
       <dependency>
         <groupId>org.ow2.asm</groupId>
@@ -264,19 +267,14 @@
         <version>${asm.version}</version>
       </dependency>
       <dependency>
-        <groupId>com.mchange</groupId>
-        <artifactId>mchange-commons-java</artifactId>
-        <version>0.6.0</version>                           <!-- upstream 0.3.x via c3p0 · SCA -->
-      </dependency>
-      <dependency>
         <groupId>org.apache.thrift</groupId>
         <artifactId>libthrift</artifactId>
-        <version>0.23.0</version>                          <!-- upstream via calcite · SCA -->
+        <version>0.24.0</version>                          <!-- upstream 0.24.0 -->
       </dependency>
       <dependency>
         <groupId>org.bouncycastle</groupId>
         <artifactId>bcpkix-jdk18on</artifactId>
-        <version>1.84</version>                            <!-- upstream via pac4j/azure · SCA -->
+        <version>1.85</version>                            <!-- upstream 1.85 -->
       </dependency>
       <dependency>
         <groupId>org.openjdk.nashorn</groupId>
@@ -289,9 +287,10 @@
         <version>${protobuf-java.version}</version>
       </dependency>
       <dependency>
-        <groupId>com.google.cloud</groupId>
-        <artifactId>google-cloud-secretmanager</artifactId>
-        <version>2.28.0</version>                          <!-- upstream via libraries-bom · SCA -->
+        <!-- google-cloud-secretmanager 2.81.0 brings protobuf-java-util 3.25.8; keep it in step with protobuf-java -->
+        <groupId>com.google.protobuf</groupId>
+        <artifactId>protobuf-java-util</artifactId>
+        <version>${protobuf-java.version}</version>
       </dependency>
       <dependency>
         <groupId>com.github.jknack</groupId>
@@ -360,6 +359,23 @@
         <version>${reactor-netty.version}</version>
       </dependency>
       <dependency>
+        <!-- lettuce-core declares 3.6.x closer to the root than reactor-netty 1.3.7 declares 3.8.x -->
+        <groupId>io.projectreactor</groupId>
+        <artifactId>reactor-core</artifactId>
+        <version>${reactor-core.version}</version>
+      </dependency>
+      <dependency>
+        <!-- kubernetes client-java 25 pulls okhttp 5.1.0 (okhttp-jvm); upstream manages 4.12.0 -->
+        <groupId>com.squareup.okhttp3</groupId>
+        <artifactId>okhttp</artifactId>
+        <version>${okhttp.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.squareup.okhttp3</groupId>
+        <artifactId>logging-interceptor</artifactId>
+        <version>${okhttp.version}</version>
+      </dependency>
+      <dependency>
         <groupId>org.eclipse.angus</groupId>
         <artifactId>angus-mail</artifactId>
         <version>${angus-mail.version}</version>
@@ -389,6 +405,11 @@
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-enforcer-plugin</artifactId>
           <version>${maven-enforcer-plugin.version}</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-clean-plugin</artifactId>
+          <version>${maven-clean-plugin.version}</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>

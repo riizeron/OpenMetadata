@@ -19,7 +19,7 @@
   <parent>
     <groupId>ru.sber.datalake</groupId>
     <artifactId>openmetadata-shaded-deps</artifactId>
-    <version>1.12.6-sber.1</version>
+    <version>2.0.2-sber.1</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
 
@@ -27,7 +27,7 @@
        The version MUST equal ${openmetadata.version} from the root pom (enforced by the parent). -->
   <groupId>org.open-metadata</groupId>
   <artifactId>opensearch-deps</artifactId>
-  <version>1.12.6</version>
+  <version>2.0.2</version>
   <name>Shaded OpenSearch Deps for OpenMetadata Server</name>
   <description>Shaded OpenSearch Java API client (relocated to os.*) used by openmetadata-service.</description>
 
